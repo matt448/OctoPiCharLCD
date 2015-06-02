@@ -38,6 +38,7 @@
 #import
 import RPi.GPIO as GPIO
 import time
+import requests
 
 # Define GPIO to LCD mapping
 LCD_RS = 25
@@ -80,23 +81,31 @@ def main():
 
   while True:
 
+    r = requests.get('http://127.0.0.1/api/printer')
+    print 'STATUS CODE: ' + str(r.status_code)
+    if r.status_code == 200:
+        hotendactual = r.json()['temps']['tool0']['actual']
+        hotendtarget = r.json()['temps']['tool0']['target']
+        hotmsg = ('HOTEND: ') + str(hotendactual) + '/' + str(hotendtarget)
+        print hotmsg
+        bedactual = r.json()['temps']['bed']['actual']
+        bedtarget = r.json()['temps']['bed']['target']
+        bedmsg = ('   BED: ') + str(bedactual) + '/' + str(bedtarget)
+    else:
+        hotmsg = 'Printer not online'
+        bedmsg = ''
+
     # Send some centred test
     lcd_string("--------------------",LCD_LINE_1,2)
-    lcd_string("Rasbperry Pi",LCD_LINE_2,2)
-    lcd_string("Model B",LCD_LINE_3,2)
+    lcd_string(hotmsg,LCD_LINE_2,1)
+    lcd_string(bedmsg,LCD_LINE_3,1)
     lcd_string("--------------------",LCD_LINE_4,2)
 
     time.sleep(3) # 3 second delay
 
-    lcd_string("Raspberrypi-spy",LCD_LINE_1,3)
-    lcd_string(".co.uk",LCD_LINE_2,3)
-    lcd_string("",LCD_LINE_3,2)
-    lcd_string("20x4 LCD Module Test",LCD_LINE_4,2)
-
-    time.sleep(3) # 3 second delay
 
     # Blank display
-    lcd_byte(0x01, LCD_CMD)
+    #lcd_byte(0x01, LCD_CMD)
 
 
 def lcd_init():

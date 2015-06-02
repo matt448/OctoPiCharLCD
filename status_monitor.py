@@ -93,11 +93,11 @@ def main():
         printeronline = True 
         hotendactual = r.json()['temps']['tool0']['actual']
         hotendtarget = r.json()['temps']['tool0']['target']
-        hotmsg = ('HOTEND: ') + str(hotendactual) + '/' + str(hotendtarget)
+        hotmsg = ('Hotend:') + str(hotendactual) + chr(223) + '/' + str(hotendtarget) + chr(223)
         print hotmsg
         bedactual = r.json()['temps']['bed']['actual']
         bedtarget = r.json()['temps']['bed']['target']
-        bedmsg = ('   BED: ') + str(bedactual) + '/' + str(bedtarget)
+        bedmsg = ('   Bed:') + str(bedactual) + chr(223) + '/' + str(bedtarget) + chr(223)
     else:
         printeronline = False
         hotmsg = 'Printer not online'
@@ -114,7 +114,7 @@ def main():
     lcd_string(ipaddr,LCD_LINE_1,2)
     lcd_string(hotmsg,LCD_LINE_2,1)
     lcd_string(bedmsg,LCD_LINE_3,1)
-    lcd_string("--------------------",LCD_LINE_4,2)
+    lcd_string('',LCD_LINE_4,1)
 
     time.sleep(3) # 3 second delay
 
@@ -205,8 +205,6 @@ def lcd_backlight(flag):
   # Toggle backlight on-off-on
   GPIO.output(LED_ON, flag)
 
-cmd = "ip addr show eth0 | grep inet | awk '{print $2}' | cut -d/ -f1"
- 
 def getipaddr():
         cmd = "ip addr show eth0 | grep inet | awk '{print $2}' | cut -d/ -f1"
         p = Popen(cmd, shell=True, stdout=PIPE)

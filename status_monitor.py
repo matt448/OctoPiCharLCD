@@ -1,37 +1,39 @@
 #!/usr/bin/python
-#--------------------------------------
-#    ___  ___  _ ____
-#   / _ \/ _ \(_) __/__  __ __
-#  / , _/ ___/ /\ \/ _ \/ // /
-# /_/|_/_/  /_/___/ .__/\_, /
-#                /_/   /___/
 #
-#  lcd_16x2.py
-#  20x4 LCD Test Script with
-#  backlight control and text justification
+#--------------------------------------
+# OctoPi monitoring code
+# 
+# Author: Matthew McMillan
+#         @matthewmcmillan
+#        
+# http://matthewcmcmillan.blogspot.com
+#--------------------------------------
+#
+#--------------------------------------
+#  20x4 LCD code with backlight control
+#  and text justification
 #
 # Author : Matt Hawkins
 # Date   : 06/04/2015
 #
 # http://www.raspberrypi-spy.co.uk/
-#
 #--------------------------------------
 
 # The wiring for the LCD is as follows:
 # 1 : GND
 # 2 : 5V
 # 3 : Contrast (0-5V)*
-# 4 : RS (Register Select)
+# 4 : RS (Register Select)   - RPi GPIO #25
 # 5 : R/W (Read Write)       - GROUND THIS PIN
-# 6 : Enable or Strobe
+# 6 : Enable or Strobe       - RPi GPIO #24
 # 7 : Data Bit 0             - NOT USED
 # 8 : Data Bit 1             - NOT USED
 # 9 : Data Bit 2             - NOT USED
 # 10: Data Bit 3             - NOT USED
-# 11: Data Bit 4
-# 12: Data Bit 5
-# 13: Data Bit 6
-# 14: Data Bit 7
+# 11: Data Bit 4             - RPi GPIO #23
+# 12: Data Bit 5             - RPi GPIO #17
+# 13: Data Bit 6             - RPi GPIO #21
+# 14: Data Bit 7             - RPi GPIO #22
 # 15: LCD Backlight +5V**
 # 16: LCD Backlight GND
 
@@ -39,6 +41,7 @@
 import RPi.GPIO as GPIO
 import time
 import requests
+from subprocess import *
 
 # Define GPIO to LCD mapping
 LCD_RS = 25
@@ -66,8 +69,9 @@ E_DELAY = 0.0005
 def main():
   # Main program block
 
+  # Configure GPIO Pins as outputs
   GPIO.setmode(GPIO.BCM)       # Use BCM GPIO numbers
-  GPIO.setup(LCD_E, GPIO.OUT)  # E
+  GPIO.setup(LCD_E, GPIO.OUT)  # EN
   GPIO.setup(LCD_RS, GPIO.OUT) # RS
   GPIO.setup(LCD_D4, GPIO.OUT) # DB4
   GPIO.setup(LCD_D5, GPIO.OUT) # DB5
@@ -80,10 +84,13 @@ def main():
 
 
   while True:
-
+    ipaddr = getipaddr()
+    print 'IP ADDR: ' + str(ipaddr)
     r = requests.get('http://127.0.0.1/api/printer')
     print 'STATUS CODE: ' + str(r.status_code)
+    # Non 200 status code means the printer isn't responding
     if r.status_code == 200:
+        printeronline = True 
         hotendactual = r.json()['temps']['tool0']['actual']
         hotendtarget = r.json()['temps']['tool0']['target']
         hotmsg = ('HOTEND: ') + str(hotendactual) + '/' + str(hotendtarget)
@@ -92,11 +99,19 @@ def main():
         bedtarget = r.json()['temps']['bed']['target']
         bedmsg = ('   BED: ') + str(bedactual) + '/' + str(bedtarget)
     else:
+        printeronline = False
         hotmsg = 'Printer not online'
         bedmsg = ''
 
+    # Only check job status if the printer is online
+    if printeronline:
+        print 'PRINTER ONLINE'
+        r = requests.get('http://127.0.0.1/api/job')
+    else:
+        print 'PRINTER OFFLINE'
+
     # Send some centred test
-    lcd_string("--------------------",LCD_LINE_1,2)
+    lcd_string(ipaddr,LCD_LINE_1,2)
     lcd_string(hotmsg,LCD_LINE_2,1)
     lcd_string(bedmsg,LCD_LINE_3,1)
     lcd_string("--------------------",LCD_LINE_4,2)
@@ -190,6 +205,14 @@ def lcd_backlight(flag):
   # Toggle backlight on-off-on
   GPIO.output(LED_ON, flag)
 
+cmd = "ip addr show eth0 | grep inet | awk '{print $2}' | cut -d/ -f1"
+ 
+def getipaddr():
+        cmd = "ip addr show eth0 | grep inet | awk '{print $2}' | cut -d/ -f1"
+        p = Popen(cmd, shell=True, stdout=PIPE)
+        output = p.communicate()[0]
+        return output.rstrip()
+
 if __name__ == '__main__':
 
   try:
@@ -198,5 +221,5 @@ if __name__ == '__main__':
     pass
   finally:
     lcd_byte(0x01, LCD_CMD)
-    lcd_string("Goodbye!",LCD_LINE_1,2)
+    lcd_string("Shutdown",LCD_LINE_1,2)
     GPIO.cleanup()

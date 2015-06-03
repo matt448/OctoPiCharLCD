@@ -85,18 +85,17 @@ def main():
     #Get IP address of the OctoPrint server
     ipaddr = getipaddr()
     ipaddrmsg = '--' + str(ipaddr) + '--'
-    print 'IP ADDR: ' + str(ipaddr)
+    #print 'IP ADDR: ' + str(ipaddr)
 
     # Get the temperatures of the hotend and bed
     r = requests.get('http://127.0.0.1/api/printer')
-    print 'STATUS CODE: ' + str(r.status_code)
+    #print 'STATUS CODE: ' + str(r.status_code)
     # Non 200 status code means the printer isn't responding
     if r.status_code == 200:
         printeronline = True 
         hotendactual = r.json()['temps']['tool0']['actual']
         hotendtarget = r.json()['temps']['tool0']['target']
         hotmsg = ('Hotend:') + str(hotendactual) + chr(223) + '/' + str(hotendtarget) + chr(223)
-        print hotmsg
         bedactual = r.json()['temps']['bed']['actual']
         bedtarget = r.json()['temps']['bed']['target']
         bedmsg = ('   Bed:') + str(bedactual) + chr(223) + '/' + str(bedtarget) + chr(223)
@@ -107,7 +106,6 @@ def main():
 
     # Only check job status if the printer is online
     if printeronline:
-        print 'PRINTER ONLINE'
         r = requests.get('http://127.0.0.1/api/job')
         printtime = r.json()['progress']['printTimeLeft']
         if printtime is None:
@@ -128,8 +126,6 @@ def main():
                 printpercentmsg = ' ' + str(printpercent) + '%'
             else:
                 printpercentmsg = str(printpercent) + '%'
-    else:
-        print 'PRINTER OFFLINE'
 
     # Write data to the LCD screen
     lcd_string(ipaddrmsg,LCD_LINE_1,2)

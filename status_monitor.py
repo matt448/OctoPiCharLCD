@@ -10,11 +10,9 @@
 #--------------------------------------
 #
 #--------------------------------------
-#  20x4 LCD code with backlight control
-#  and text justification
+# 20x4 LCD code
 #
 # Author : Matt Hawkins
-# Date   : 06/04/2015
 #
 # http://www.raspberrypi-spy.co.uk/
 #--------------------------------------
@@ -84,8 +82,12 @@ def main():
 
 
   while True:
+    #Get IP address of the OctoPrint server
     ipaddr = getipaddr()
+    ipaddrmsg = '--' + str(ipaddr) + '--'
     print 'IP ADDR: ' + str(ipaddr)
+
+    # Get the temperatures of the hotend and bed
     r = requests.get('http://127.0.0.1/api/printer')
     print 'STATUS CODE: ' + str(r.status_code)
     # Non 200 status code means the printer isn't responding
@@ -100,21 +102,40 @@ def main():
         bedmsg = ('   Bed:') + str(bedactual) + chr(223) + '/' + str(bedtarget) + chr(223)
     else:
         printeronline = False
-        hotmsg = 'Printer not online'
-        bedmsg = ''
+        hotmsg = ''
+        bedmsg = ' 3D Printer offline'
 
     # Only check job status if the printer is online
     if printeronline:
         print 'PRINTER ONLINE'
         r = requests.get('http://127.0.0.1/api/job')
+        printtime = r.json()['progress']['printTimeLeft']
+        if printtime is None:
+            printtimemsg = '00:00:00'
+        else:
+            printhours = int(printtime/60/60)
+            printminutes = int(printtime/60)
+            printseconds = int(printtime % 60)
+            printtimemsg = str(printhours).zfill(2) + ':' + str(printminutes).zfill(2) + ':' + str(printseconds).zfill(2)
+
+        printpercent = int(r.json()['progress']['completion'])
+        if printpercent is None:
+            printpercentmsg = '---%'
+        else:
+            if printpercent < 10:
+                printpercentmsg = '  ' + str(printpercent) + '%'
+            elif (printpercent >= 10) and (printpercent < 100):
+                printpercentmsg = ' ' + str(printpercent) + '%'
+            else:
+                printpercentmsg = str(printpercent) + '%'
     else:
         print 'PRINTER OFFLINE'
 
-    # Send some centred test
-    lcd_string(ipaddr,LCD_LINE_1,2)
+    # Write data to the LCD screen
+    lcd_string(ipaddrmsg,LCD_LINE_1,2)
     lcd_string(hotmsg,LCD_LINE_2,1)
     lcd_string(bedmsg,LCD_LINE_3,1)
-    lcd_string('',LCD_LINE_4,1)
+    lcd_string(printtimemsg + '        ' + printpercentmsg,LCD_LINE_4,1)
 
     time.sleep(3) # 3 second delay
 

@@ -112,7 +112,10 @@ def main():
             printtimemsg = '00:00:00'
         else:
             printhours = int(printtime/60/60)
-            printminutes = int(printtime/60)
+            if printhours > 0:
+                printminutes = int(printtime/60)-(60*printhours)
+            else:
+                printminutes = int(printtime/60)
             printseconds = int(printtime % 60)
             printtimemsg = str(printhours).zfill(2) + ':' + str(printminutes).zfill(2) + ':' + str(printseconds).zfill(2)
 
@@ -131,7 +134,10 @@ def main():
     lcd_string(ipaddrmsg,LCD_LINE_1,2)
     lcd_string(hotmsg,LCD_LINE_2,1)
     lcd_string(bedmsg,LCD_LINE_3,1)
-    lcd_string(printtimemsg + '        ' + printpercentmsg,LCD_LINE_4,1)
+    if printeronline:
+        lcd_string(printtimemsg + '        ' + printpercentmsg,LCD_LINE_4,1)
+    else:
+        lcd_string('',LCD_LINE_4,1)
 
     time.sleep(3) # 3 second delay
 

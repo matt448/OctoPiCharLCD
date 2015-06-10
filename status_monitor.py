@@ -119,13 +119,13 @@ def main():
             printseconds = int(printtime % 60)
             printtimemsg = str(printhours).zfill(2) + ':' + str(printminutes).zfill(2) + ':' + str(printseconds).zfill(2)
 
-        printpercent = int(r.json()['progress']['completion'])
+        printpercent = r.json()['progress']['completion']
         if printpercent is None:
             printpercentmsg = '---%'
         else:
-            if printpercent < 10:
+            if int(printpercent) < 10:
                 printpercentmsg = '  ' + str(printpercent) + '%'
-            elif (printpercent >= 10) and (printpercent < 100):
+            elif (int(printpercent) >= 10) and (int(printpercent) < 100):
                 printpercentmsg = ' ' + str(printpercent) + '%'
             else:
                 printpercentmsg = str(printpercent) + '%'

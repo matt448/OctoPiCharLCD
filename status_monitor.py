@@ -123,9 +123,10 @@ def main():
         if printpercent is None:
             printpercentmsg = '---%'
         else:
-            if int(printpercent) < 10:
+            printpercent = int(printpercent)
+            if printpercent < 10:
                 printpercentmsg = '  ' + str(printpercent) + '%'
-            elif (int(printpercent) >= 10) and (int(printpercent) < 100):
+            elif (printpercent >= 10) and (printpercent < 100):
                 printpercentmsg = ' ' + str(printpercent) + '%'
             else:
                 printpercentmsg = str(printpercent) + '%'

@@ -35,6 +35,9 @@ sudo service octolcd start
 
 ##LCD Wiring
 
+This is the wiring for the very first Raspberry Pi. Newer models may be different.
+If different pins are used on the RPi you will need to edit the pin numbers in the octolcd.py script.
+
 LCD Pin # | LCD Pin Desc | Connection
 :---------: |------------|-----------
 1         | GND          | Ground

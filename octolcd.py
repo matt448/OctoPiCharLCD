@@ -235,13 +235,14 @@ def getipaddr():
         output = p.communicate()[0]
         return output.rstrip()
 
+def cleanup():
+    lcd_byte(0x01, LCD_CMD)
+    lcd_string("Shutdown",LCD_LINE_1,2)
+    GPIO.cleanup()
+
 if __name__ == '__main__':
 
   try:
     main()
-  except KeyboardInterrupt:
-    pass
   finally:
-    lcd_byte(0x01, LCD_CMD)
-    lcd_string("Shutdown",LCD_LINE_1,2)
-    GPIO.cleanup()
+    cleanup() 

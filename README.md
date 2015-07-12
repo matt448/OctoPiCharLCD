@@ -4,7 +4,31 @@ Show OctoPrint status on a character LCD display
 This app will show some status info for OctoPrint on a 20x4 character LCD display. The LCD display is connected to Raspberry Pi GPIO pins and the data is pulled from the OctoPrint API.
 
 ##Installation
-TODO - Add installation instructions (required apt packages, python libraries, init script)
+ssh into your Octoprint machine as the 'pi' user
+
+Install required packages
+```
+sudo apt-get install build-essential python-dev python-smbus python-pip git
+sudo pip install rpi.gpio
+sudo pip install requests
+```
+
+Clone the repository
+```
+cd /home/pi
+sudo git clone https://github.com/matt448/OctoPiCharLCD.git
+```
+
+Create symbolic links for startup scripts
+```
+sudo ln -s /home/pi/OctoPiCharLCD/octolcd.py /usr/bin/octolcd
+sudo ln -s /home/pi/OctoPiCharLCD/etc/init.d/octolcd /etc/init.d/octolcd
+```
+
+Start up the service
+```
+sudo service octolcd start
+```
 
 ##Screenshot
 ![Screenshot](screenshot.jpg)

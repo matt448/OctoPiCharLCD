@@ -37,7 +37,7 @@ from lcdscreen import LCDScreen
 lcd = LCDScreen({
         'pin_rs': 25,
         'pin_e': 24,
-        'pins_db': [23, 17, 27, 22],
+        'pins_db': [23, 17, 21, 22],
         'backlight': 18,
         'dimensions': [20, 4]
 })
@@ -97,9 +97,9 @@ def main():
                 printpercentmsg = str(printpercent) + '%'
 
     # Write data to the LCD screen
-    lcd.message(ipaddrmsg, 'left')
+    lcd.message(ipaddrmsg, 'center')
     lcd.message(hotmsg, 'left')
-    lcd.message(bedmsg, 'center')
+    lcd.message(bedmsg, 'left')
     if printeronline:
         lcd.message(printtimemsg + '        ' + printpercentmsg, 'left')
     else:
@@ -115,7 +115,6 @@ def getipaddr():
         return output.rstrip()
 
 def cleanup():
-    lcd_byte(0x01, LCD_CMD)
     lcd.message("Shutdown", 'center')
     GPIO.cleanup()
 

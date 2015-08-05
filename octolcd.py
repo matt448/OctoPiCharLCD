@@ -67,7 +67,7 @@ E_DELAY = 0.0005
 
 # Define Octoprint constants
 settings = ConfigParser.ConfigParser()
-settings.read('octolcd.cfg')
+settings.read('/home/pi/OctoPiCharLCD/octolcd.cfg')
 host = settings.get('APISettings', 'host')
 apikey = settings.get('APISettings', 'apikey')
 printerapiurl = 'http://'+ host + '/api/printer'

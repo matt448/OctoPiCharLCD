@@ -35,10 +35,11 @@
 # 15: LCD Backlight +5V**
 # 16: LCD Backlight GND
 
-#import
 import RPi.GPIO as GPIO
 import time
 import requests
+import json
+import ConfigParser
 from subprocess import *
 
 # Define GPIO to LCD mapping
@@ -64,6 +65,16 @@ LCD_LINE_4 = 0xD4 # LCD RAM address for the 4th line
 E_PULSE = 0.0005
 E_DELAY = 0.0005
 
+# Define Octoprint constants
+settings = ConfigParser.ConfigParser()
+settings.read('octolcd.cfg')
+host = settings.get('APISettings', 'host')
+apikey = settings.get('APISettings', 'apikey')
+printerapiurl = 'http://'+ host + '/api/printer'
+jobapiurl = 'http://' + host + '/api/job'
+headers = {'X-Api-Key': apikey}
+print headers
+
 def main():
   # Main program block
 
@@ -88,16 +99,16 @@ def main():
     #print 'IP ADDR: ' + str(ipaddr)
 
     # Get the temperatures of the hotend and bed
-    r = requests.get('http://127.0.0.1/api/printer')
+    r = requests.get(printerapiurl, headers=headers)
     #print 'STATUS CODE: ' + str(r.status_code)
     # Non 200 status code means the printer isn't responding
     if r.status_code == 200:
         printeronline = True 
-        hotendactual = r.json()['temps']['tool0']['actual']
-        hotendtarget = r.json()['temps']['tool0']['target']
+        hotendactual = r.json()['temperature']['tool0']['actual']
+        hotendtarget = r.json()['temperature']['tool0']['target']
         hotmsg = ('Hotend:') + str(hotendactual) + chr(223) + '/' + str(hotendtarget) + chr(223)
-        bedactual = r.json()['temps']['bed']['actual']
-        bedtarget = r.json()['temps']['bed']['target']
+        bedactual = r.json()['temperature']['bed']['actual']
+        bedtarget = r.json()['temperature']['bed']['target']
         bedmsg = ('   Bed:') + str(bedactual) + chr(223) + '/' + str(bedtarget) + chr(223)
     else:
         printeronline = False
@@ -106,7 +117,7 @@ def main():
 
     # Only check job status if the printer is online
     if printeronline:
-        r = requests.get('http://127.0.0.1/api/job')
+        r = requests.get(jobapiurl, headers=headers)
         printtime = r.json()['progress']['printTimeLeft']
         if printtime is None:
             printtimemsg = '00:00:00'

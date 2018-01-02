@@ -5,7 +5,7 @@ This app will show some status info for OctoPrint on a 20x4 character LCD displa
 
 Note: Now requires Octoprint version 1.2 or higher due to changes in the Octoprint software API key requirements.
 
-##Installation
+## Installation
 ssh into your Octoprint machine as the 'pi' user
 
 Install required packages
@@ -37,10 +37,10 @@ Start up the service
 sudo service octolcd start
 ```
 
-##Screenshot
+## Screenshot
 ![Screenshot](screenshot.jpg)
 
-##LCD Wiring
+## LCD Wiring
 
 This is the wiring for the very first Raspberry Pi. Newer models may be different.
 If different pins are used on the RPi you will need to edit the pin numbers in the octolcd.py script.

@@ -2,10 +2,10 @@
 #
 #--------------------------------------
 # OctoPi monitoring code
-# 
+#
 # Author: Matthew McMillan
 #         @matthewmcmillan
-#        
+#
 # http://matthewcmcmillan.blogspot.com
 #--------------------------------------
 #
@@ -35,12 +35,20 @@
 # 15: LCD Backlight +5V**
 # 16: LCD Backlight GND
 
-import RPi.GPIO as GPIO
+
 import time
 import requests
 import json
 import ConfigParser
 from subprocess import *
+
+# Define Testmode
+#   - True: Disables LCD display and uses command line output for testing
+#   - False: Normal functionality. Uses LCD display for output.
+TESTMODE = False
+
+if not TESTMODE:
+    import RPi.GPIO as GPIO
 
 # Define GPIO to LCD mapping
 LCD_RS = 25
@@ -65,6 +73,8 @@ LCD_LINE_4 = 0xD4 # LCD RAM address for the 4th line
 E_PULSE = 0.0005
 E_DELAY = 0.0005
 
+
+
 # Define Octoprint constants
 settings = ConfigParser.ConfigParser()
 settings.read('/home/pi/OctoPiCharLCD/octolcd.cfg')
@@ -78,37 +88,43 @@ print headers
 def main():
   # Main program block
 
-  # Configure GPIO Pins as outputs
-  GPIO.setmode(GPIO.BCM)       # Use BCM GPIO numbers
-  GPIO.setup(LCD_E, GPIO.OUT)  # EN
-  GPIO.setup(LCD_RS, GPIO.OUT) # RS
-  GPIO.setup(LCD_D4, GPIO.OUT) # DB4
-  GPIO.setup(LCD_D5, GPIO.OUT) # DB5
-  GPIO.setup(LCD_D6, GPIO.OUT) # DB6
-  GPIO.setup(LCD_D7, GPIO.OUT) # DB7
-  GPIO.setup(LED_ON, GPIO.OUT) # Backlight enable
-
-  # Initialise display
-  lcd_init()
+  if TESTMODE == True:
+      print('TEST MODE - Not using LCD display')
+      print('')
+  else:
+      # Configure GPIO Pins as outputs
+      GPIO.setmode(GPIO.BCM)       # Use BCM GPIO numbers
+      GPIO.setup(LCD_E, GPIO.OUT)  # EN
+      GPIO.setup(LCD_RS, GPIO.OUT) # RS
+      GPIO.setup(LCD_D4, GPIO.OUT) # DB4
+      GPIO.setup(LCD_D5, GPIO.OUT) # DB5
+      GPIO.setup(LCD_D6, GPIO.OUT) # DB6
+      GPIO.setup(LCD_D7, GPIO.OUT) # DB7
+      GPIO.setup(LED_ON, GPIO.OUT) # Backlight enable
+      # Initialise display
+      lcd_init()
 
 
   while True:
-    #Get IP address of the OctoPrint server
-    ipaddr = getipaddr()
-    ipaddrmsg = '--' + str(ipaddr) + '--'
-    #print 'IP ADDR: ' + str(ipaddr)
+    if TESTMODE:
+        ipaddrmsg = '  --127.0.0.1--'
+    else:
+        # Get IP address of the OctoPrint server
+        ipaddr = getipaddr()
+        ipaddrmsg = '--' + str(ipaddr) + '--'
 
     # Get the temperatures of the hotend and bed
     r = requests.get(printerapiurl, headers=headers)
     #print 'STATUS CODE: ' + str(r.status_code)
     # Non 200 status code means the printer isn't responding
     if r.status_code == 200:
-        printeronline = True 
-        hotendactual = r.json()['temperature']['tool0']['actual']
-        hotendtarget = r.json()['temperature']['tool0']['target']
+        printeronline = True
+        printerdata = r.json()
+        hotendactual = safeget(printerdata, 'temperature', 'tool0', 'actual')
+        hotendtarget = safeget(printerdata, 'temperature', 'tool0', 'target')
         hotmsg = ('Hotend:') + str(hotendactual) + chr(223) + '/' + str(hotendtarget) + chr(223)
-        bedactual = r.json()['temperature']['bed']['actual']
-        bedtarget = r.json()['temperature']['bed']['target']
+        bedactual = safeget(printerdata, 'temperature', 'bed', 'actual')
+        bedtarget = safeget(printerdata, 'temperature', 'bed', 'target')
         bedmsg = ('   Bed:') + str(bedactual) + chr(223) + '/' + str(bedtarget) + chr(223)
     else:
         printeronline = False
@@ -118,7 +134,8 @@ def main():
     # Only check job status if the printer is online
     if printeronline:
         r = requests.get(jobapiurl, headers=headers)
-        printtime = r.json()['progress']['printTimeLeft']
+        jobdata = r.json()
+        printtime = safeget(jobdata, 'progress', 'printTimeLeft')
         if printtime is None:
             printtimemsg = '00:00:00'
         else:
@@ -130,7 +147,7 @@ def main():
             printseconds = int(printtime % 60)
             printtimemsg = str(printhours).zfill(2) + ':' + str(printminutes).zfill(2) + ':' + str(printseconds).zfill(2)
 
-        printpercent = r.json()['progress']['completion']
+        printpercent = safeget(jobdata, 'progress', 'completion')
         if printpercent is None:
             printpercentmsg = '---%'
         else:
@@ -142,14 +159,28 @@ def main():
             else:
                 printpercentmsg = str(printpercent) + '%'
 
-    # Write data to the LCD screen
-    lcd_string(ipaddrmsg,LCD_LINE_1,2)
-    lcd_string(hotmsg,LCD_LINE_2,1)
-    lcd_string(bedmsg,LCD_LINE_3,1)
-    if printeronline:
-        lcd_string(printtimemsg + '        ' + printpercentmsg,LCD_LINE_4,1)
+    if TESTMODE:
+        print(ipaddrmsg)
+        print(hotmsg)
+        print(bedmsg)
     else:
-        lcd_string('',LCD_LINE_4,1)
+        # Write data to the LCD screen
+        lcd_string(ipaddrmsg,LCD_LINE_1,2)
+        lcd_string(hotmsg,LCD_LINE_2,1)
+        lcd_string(bedmsg,LCD_LINE_3,1)
+
+    if printeronline:
+        if TESTMODE:
+            print(printtimemsg)
+            print('')
+        else:
+            lcd_string(printtimemsg + '        ' + printpercentmsg,LCD_LINE_4,1)
+    else:
+        if TESTMODE:
+            print('')
+            print('')
+        else:
+            lcd_string('',LCD_LINE_4,1)
 
     time.sleep(3) # 3 second delay
 
@@ -157,6 +188,14 @@ def main():
     # Blank display
     #lcd_byte(0x01, LCD_CMD)
 
+
+def safeget(dct, *keys):
+    for key in keys:
+        try:
+            dct = dct[key]
+        except KeyError:
+            return None
+    return dct
 
 def lcd_init():
   # Initialise display
@@ -256,4 +295,5 @@ if __name__ == '__main__':
   try:
     main()
   finally:
-    cleanup() 
+    if not TESTMODE:
+        cleanup()
